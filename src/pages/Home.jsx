@@ -1,7 +1,47 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import apiClient from "../api";
 import "./Home.css";
 
 function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [userName, setUserName] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkAuth();
+    fetchCategories();
+  }, []);
+
+  const checkAuth = async () => {
+    if (apiClient.isAuthenticated()) {
+      setIsAuthenticated(true);
+      try {
+        const response = await apiClient.getMe();
+        setUserName(response.user?.name || "");
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await apiClient.getCategories();
+      setCategories(response.categories || []);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  const handleLogout = () => {
+    apiClient.logout();
+    setIsAuthenticated(false);
+    setUserName("");
+    navigate("/");
+  };
+
   return (
     <div className="home">
 
@@ -13,7 +53,16 @@ function Home() {
           <Link to="/">Home</Link>
           <Link to="/report">Report Issue</Link>
           <Link to="/complaints">My Complaints</Link>
-          <Link to="/login">Login</Link>
+          {isAuthenticated ? (
+            <>
+              <span className="user-name">{userName}</span>
+              <button onClick={handleLogout} className="logout-btn">
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link to="/login">Login</Link>
+          )}
         </div>
       </nav>
 
@@ -68,31 +117,41 @@ function Home() {
         </p>
 
         <div className="category-grid">
+          {categories.length > 0 ? (
+            categories.map(cat => (
+              <div className="category-card" key={cat.id}>
+                <div className="category-icon">{cat.icon || '📋'}</div>
+                <h3>{cat.name}</h3>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="category-card">
+                <div className="category-icon">🛣️</div>
+                <h3>Potholes</h3>
+              </div>
 
-          <div className="category-card">
-            <div className="category-icon">🛣️</div>
-            <h3>Potholes</h3>
-          </div>
+              <div className="category-card">
+                <div className="category-icon">🗑️</div>
+                <h3>Garbage</h3>
+              </div>
 
-          <div className="category-card">
-            <div className="category-icon">🗑️</div>
-            <h3>Garbage</h3>
-          </div>
+              <div className="category-card">
+                <div className="category-icon">💧</div>
+                <h3>Water Leakage</h3>
+              </div>
 
-          <div className="category-card">
-            <div className="category-icon">💧</div>
-            <h3>Water Leakage</h3>
-          </div>
+              <div className="category-card">
+                <div className="category-icon">💡</div>
+                <h3>Streetlights</h3>
+              </div>
 
-          <div className="category-card">
-            <div className="category-icon">💡</div>
-            <h3>Streetlights</h3>
-          </div>
-
-          <div className="category-card">
-            <div className="category-icon">🚰</div>
-            <h3>Drainage</h3>
-          </div>
+              <div className="category-card">
+                <div className="category-icon">🚰</div>
+                <h3>Drainage</h3>
+              </div>
+            </>
+          )}
 
         </div>
 
